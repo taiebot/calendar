@@ -2,7 +2,175 @@
  * SPDX-FileCopyrightText: 2019 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+import { DateTimeValue } from '@nextcloud/calendar-js'
+import { getCanonicalLocale, translate as t } from '@nextcloud/l10n'
+import getTimezoneManager from '../../services/timezoneDataProviderService.js'
+import useSettingsStore from '../../store/settings.js'
 import { errorCatch } from '../utils/errors.js'
+import { getDateFromDateTimeValue } from '@/utils/date.js'
+
+/**
+ * Convert a date from UTC to user's timezone
+ *
+ * @param {Date} date The date to convert (in UTC)
+ * @return {Date} Converted date in user's timezone
+ */
+function convertToUserTimezone(date) {
+	const settingsStore = useSettingsStore()
+	const userTimezoneId = settingsStore.getResolvedTimezone
+
+	const tzManager = getTimezoneManager()
+	const utcTimezone = tzManager.getTimezoneForId('UTC')
+	const userTimezone = tzManager.getTimezoneForId(userTimezoneId)
+
+	const dateTimeValue = DateTimeValue.fromJSDate(date, true)
+	dateTimeValue.replaceTimezone(utcTimezone)
+	return getDateFromDateTimeValue(dateTimeValue.getInTimezone(userTimezone))
+}
+
+/**
+ * Format a date with specified options
+ *
+ * @param {Date} date The date to format (in UTC for timed events, local for all-day)
+ * @param {string} locale The locale to use
+ * @param {object} options Formatting options
+ * @param {boolean} convertTimezone Whether to convert from UTC to user timezone
+ * @return {string} Formatted date string
+ */
+function formatDate(date, locale, options, convertTimezone = false) {
+	const dateToFormat = convertTimezone ? convertToUserTimezone(date) : date
+	return dateToFormat.toLocaleString(locale, options)
+}
+
+/**
+ * Check if an all-day event spans multiple days
+ *
+ * @param {Date} start Start date
+ * @param {Date} end End date (exclusive in FullCalendar)
+ * @return {boolean} True if multi-day
+ */
+function isMultiDayAllDayEvent(start, end) {
+	// FullCalendar all-day end dates are exclusive, so subtract one day
+	const adjustedEnd = new Date(end)
+	adjustedEnd.setDate(adjustedEnd.getDate() - 1)
+	adjustedEnd.setHours(0, 0, 0, 0)
+
+	const startMidnight = new Date(start)
+	startMidnight.setHours(0, 0, 0, 0)
+
+	return adjustedEnd.getTime() > startMidnight.getTime()
+}
+
+/**
+ * Build time description for all-day events
+ *
+ * @param {EventApi} event The event
+ * @param {string} locale The locale to use
+ * @return {string} Time description
+ */
+function buildAllDayTimeDescription(event, locale) {
+	if (!event.start) {
+		return ''
+	}
+
+	const dateOptions = {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+	}
+	const startStr = formatDate(event.start, locale, dateOptions)
+
+	if (!event.end || !isMultiDayAllDayEvent(event.start, event.end)) {
+		return startStr
+	}
+
+	// Multi-day event: calculate end date (exclusive, so subtract 1 day)
+	const adjustedEnd = new Date(event.end)
+	adjustedEnd.setDate(adjustedEnd.getDate() - 1)
+	const endStr = formatDate(adjustedEnd, locale, dateOptions)
+
+	return t('calendar', '{startDate} to {endDate}', {
+		startDate: startStr,
+		endDate: endStr,
+	})
+}
+
+/**
+ * Build time description for timed events
+ *
+ * @param {EventApi} event The event
+ * @param {string} locale The locale to use
+ * @return {string} Time description
+ */
+function buildTimedEventDescription(event, locale) {
+	if (!event.start) {
+		return ''
+	}
+
+	const dateTimeOptions = {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+	}
+	const timeOptions = {
+		hour: 'numeric',
+		minute: 'numeric',
+	}
+
+	const startStr = formatDate(event.start, locale, dateTimeOptions, true)
+
+	if (!event.end) {
+		return startStr
+	}
+
+	// Check if same day - only show time for end
+	const sameDay = event.start.toDateString() === event.end.toDateString()
+	if (sameDay) {
+		const endTimeStr = formatDate(event.end, locale, timeOptions, true)
+		return t('calendar', '{startDateTime} to {endTime}', {
+			startDateTime: startStr,
+			endTime: endTimeStr,
+		})
+	}
+
+	// Multi-day timed event
+	const endStr = formatDate(event.end, locale, dateTimeOptions, true)
+	return t('calendar', '{startDateTime} to {endDateTime}', {
+		startDateTime: startStr,
+		endDateTime: endStr,
+	})
+}
+
+/**
+ * Builds an accessible label for a calendar event including its title and time.
+ *
+ * @param {EventApi} event The fullcalendar event object
+ * @return {string} A human-readable label for screen readers
+ */
+function buildAriaLabel(event) {
+	const locale = getCanonicalLocale() || undefined
+	const title = event.title || t('calendar', 'Untitled event')
+	const parts = [title]
+
+	if (event.allDay) {
+		parts.push(t('calendar', 'All day'))
+		const timeDescription = buildAllDayTimeDescription(event, locale)
+		if (timeDescription) {
+			parts.push(timeDescription)
+		}
+	} else {
+		const timeDescription = buildTimedEventDescription(event, locale)
+		if (timeDescription) {
+			parts.push(timeDescription)
+		}
+	}
+
+	return parts.join(', ')
+}
 
 /**
  * Adds data to the html element representing the event in the fullcalendar grid.
@@ -13,9 +181,12 @@ import { errorCatch } from '../utils/errors.js'
  * @param {Node} data.el The HTML element
  */
 export default errorCatch(function({ event, el }) {
+	// Set aria-label for screen reader accessibility
+	el.setAttribute('aria-label', buildAriaLabel(event))
 	if (el.classList.contains('fc-event-nc-alarms')) {
 		const notificationIcon = document.createElement('span')
 		notificationIcon.classList.add('icon-event-reminder')
+		notificationIcon.setAttribute('aria-hidden', 'true')
 		if (event.extendedProps.darkText) {
 			notificationIcon.classList.add('icon-event-reminder--dark')
 		} else {
@@ -137,7 +308,7 @@ export default errorCatch(function({ event, el }) {
 		const titleElement = el.querySelector('.fc-event-title')
 
 		if (titleElement) {
-			const svgString = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="m40-120 440-760 440 760H40Zm440-120q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z"/></svg>'
+			const svgString = '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="m40-120 440-760 440 760H40Zm440-120q17 0 28.5-11.5T520-280q0-17-11.5-28.5T480-320q-17 0-28.5 11.5T440-280q0 17 11.5 28.5T480-240Zm-40-120h80v-200h-80v200Z"/></svg>'
 			titleElement.innerHTML = svgString + titleElement.innerHTML
 
 			const svgElement = titleElement.querySelector('svg')
