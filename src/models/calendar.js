@@ -62,6 +62,8 @@ function getDefaultCalendarObject(props = {}) {
 		fetchedTimeRanges: [],
 		// Scheduling transparency
 		transparency: 'opaque',
+		// Default alarm/reminder for new events in seconds (null or 'none' if disabled)
+		defaultAlarm: null,
 		...props,
 	}
 }
@@ -103,6 +105,9 @@ function mapDavCollectionToCalendar(calendar, currentUserPrincipal) {
 	// then the default value CALDAV:opaque MUST be assumed.
 	// https://datatracker.ietf.org/doc/html/rfc6638#section-9.1
 	const transparency = calendar.transparency || 'opaque'
+	// Default alarm for new events in this calendar (in seconds)
+	// The value can be null, 'none', or a number of seconds
+	const defaultAlarm = calendar.defaultAlarm !== undefined ? calendar.defaultAlarm : null
 
 	let isSharedWithMe = false
 	if (!currentUserPrincipal) {
@@ -161,6 +166,7 @@ function mapDavCollectionToCalendar(calendar, currentUserPrincipal) {
 		shares,
 		timezone,
 		transparency,
+		defaultAlarm,
 		dav: calendar,
 	})
 }

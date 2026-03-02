@@ -1391,9 +1391,18 @@ export default defineStore('calendarObjectInstance', {
 			const eventComponent = getObjectAtRecurrenceId(calendarObject, startDate)
 			const calendarObjectInstance = mapEventComponentToEventObject(eventComponent)
 
-			// Add an alarm if the user set a default one in the settings. If
-			// not, defaultReminder will not be a number (rather the string "none").
-			const defaultReminder = parseInt(settingsStore.defaultReminder)
+			// Add an alarm if set. First check for calendar-specific default alarm,
+			// then fall back to the global default reminder setting.
+			const calendarsStore = useCalendarsStore()
+			const calendar = calendarsStore.getCalendarById(calendarObject.calendarId)
+
+			let defaultReminder = null
+			if (calendar && calendar.defaultAlarm !== null && calendar.defaultAlarm !== 'none') {
+				defaultReminder = parseInt(calendar.defaultAlarm)
+			} else {
+				defaultReminder = parseInt(settingsStore.defaultReminder)
+			}
+
 			if (!isNaN(defaultReminder)) {
 				this.addAlarmToCalendarObjectInstance({
 					calendarObjectInstance,

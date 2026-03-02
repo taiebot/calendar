@@ -587,6 +587,25 @@ export default defineStore('calendars', {
 		},
 
 		/**
+		 * Change a calendar's default alarm
+		 *
+		 * @param {object} data destructuring object
+		 * @param {object} data.calendar the calendar to modify
+		 * @param {string|null} data.defaultAlarm the new default alarm in seconds (or null/'none' to disable)
+		 * @return {Promise}
+		 */
+		async changeCalendarDefaultAlarm({ calendar, defaultAlarm }) {
+			if (calendar.dav.defaultAlarm === defaultAlarm) {
+				return
+			}
+
+			calendar.dav.defaultAlarm = defaultAlarm
+
+			await calendar.dav.update()
+			this.calendarsById[calendar.id].defaultAlarm = defaultAlarm
+		},
+
+		/**
 		 * Share calendar with User or Group
 		 *
 		 * @param {object} data destructuring object
