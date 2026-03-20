@@ -1,5 +1,5 @@
 <!--
-  - SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
+  - SPDX-FileCopyrightText: 2026 Nextcloud GmbH and Nextcloud contributors
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
@@ -140,187 +140,190 @@ import { Proposal, ProposalResponse } from '@/models/proposals/proposals'
 import { ProposalDateVote } from '@/types/proposals/proposalEnums'
 
 export default {
-	name: 'ProposalResponseMatrix',
+    name: 'ProposalResponseMatrix',
 
-	components: {
-		NcButton,
-		NcAvatar,
-		NcCheckboxRadioSwitch,
-		VoteYesIcon,
-		VoteNoIcon,
-		VoteMaybeIcon,
-		VoteNoneIcon,
-		CreateIcon,
-	},
+    components: {
+        NcButton,
+        NcAvatar,
+        NcCheckboxRadioSwitch,
+        VoteYesIcon,
+        VoteNoIcon,
+        VoteMaybeIcon,
+        VoteNoneIcon,
+        CreateIcon,
+    },
 
-	props: {
-		mode: {
-			type: String,
-			required: true,
-		},
+    props: {
+        mode: {
+            type: String,
+            required: true,
+        },
 
-		proposal: {
-			type: Proposal,
-			required: true,
-		},
+        proposal: {
+            type: Proposal,
+            required: true,
+        },
 
-		response: {
-			type: ProposalResponse,
-		},
+        response: {
+            type: ProposalResponse,
+        },
 
-		timezoneId: {
-			type: String,
-			default: 'UTC',
-		},
-	},
+        timezoneId: {
+            type: String,
+            default: 'UTC',
+        },
+    },
 
-	emits: [
-		'dateConvert',
-		'dateVote',
-	],
+    emits: ['dateConvert', 'dateVote'],
 
-	data() {
-		return {
-			ProposalDateVote,
-			timezoneOffset: 0,
-		}
-	},
+    methods: {
+        t,
 
-	computed: {
-		datesGrouped() {
-			if (!this.proposal) {
-				return []
-			}
-			// Sort dates for predictable grouping
-			const dates = [...this.proposal.dates].sort((a, b) => {
-				if (!a.date || !b.date) {
-					return 0
-				}
-				return a.date.getTime() - b.date.getTime()
-			})
-			const groups = {}
-			dates.forEach((d) => {
-				// Apply timezone offset for grouping by day
-				const key = d.date ? moment(d.date).utcOffset(this.timezoneOffset).format('yyyy-MM-dd') : 'invalid'
-				if (!groups[key]) {
-					groups[key] = []
-				}
-				groups[key].push(d)
-			})
-			return Object.entries(groups).map(([key, grp]: [string, ProposalDate[]]) => ({
-				key,
-				label: moment(grp[0].date).utcOffset(this.timezoneOffset).format('dddd, MMMM Do'),
-				dates: grp,
-			}))
-		},
+        /**
+         * Compute the timezone offset (in minutes) for a specific date
+         * using Intl.DateTimeFormat.formatToParts() — DST‑safe.
+         */
+        calculateTimezoneOffset(date: Date, timezoneId: string): number {
+            try {
+                const tzFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: timezoneId,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                });
 
-		columnCount() {
-			// time + participants + action
-			const participants = this.proposal?.participants?.length ?? 0
-			return 2 + participants
-		},
+                const utcFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'UTC',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                });
 
-	},
+                const partsToISO = (parts: Intl.DateTimeFormatPart[]) => {
+                    const map: Record<string, string> = {};
+                    for (const p of parts) map[p.type] = p.value;
+                    return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;
+                };
 
-	watch: {
-		timezoneId(newZone) {
-			if (newZone) {
-				this.timezoneOffset = this.calculateTimezoneOffset(newZone)
-			}
-		},
-	},
+                const tzISO = partsToISO(tzFormatter.formatToParts(date));
+                const utcISO = partsToISO(utcFormatter.formatToParts(date));
 
-	created() {
-		if (this.timezoneId) {
-			this.timezoneOffset = this.calculateTimezoneOffset(this.timezoneId)
-		}
-	},
+                const localAtTz = new Date(tzISO);
+                const utcAtTz = new Date(utcISO);
 
-	methods: {
-		t,
+                return Math.round((localAtTz.getTime() - utcAtTz.getTime()) / (1000 * 60));
+            } catch {
+                return 0;
+            }
+        },
 
-		calculateTimezoneOffset(timezoneId) {
-			// Get the timezone offset in minutes
-			try {
-				const now = new Date()
-				const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
-				const targetDate = new Date(now.toLocaleString('en-US', { timeZone: timezoneId }))
-				return ((utcDate.getTime() - targetDate.getTime()) / (1000 * 60)) * -1
-			} catch (e) {
-				// Fallback to UTC if timezone is invalid
-				return 0
-			}
-		},
+        /**
+         * Format a time span (start → end) in the target timezone.
+         */
+        dateTimeSpan(date: Date) {
+            const offset = this.calculateTimezoneOffset(date, this.timezoneId);
 
-		dateTimeSpan(date) {
-			const startDate = moment(date).utcOffset(this.timezoneOffset)
-			const endDate = moment(date).utcOffset(this.timezoneOffset).add(this.proposal.duration, 'minutes')
+            const start = moment(date).utcOffset(offset);
+            const end = moment(date).utcOffset(offset).add(this.proposal.duration, 'minutes');
 
-			const startTime = startDate.format('LT')
-			const endTime = endDate.format('LT')
+            return `${start.format('LT')} - ${end.format('LT')}`;
+        },
 
-			return `${startTime} - ${endTime}`
-		},
+        /**
+         * Compact date formatting (e.g., "7/8 2PM")
+         */
+        formatProposalDateCompact(date: Date) {
+            if (!date) return '';
+            const offset = this.calculateTimezoneOffset(date, this.timezoneId);
+            return moment(date).utcOffset(offset).format('M/D LT').replace(':00', '');
+        },
 
-		dateVoteValue(date: ProposalDate): ProposalDateVote {
-			if (date.id === null) {
-				return ProposalDateVote.Maybe
-			}
-			if (!this.response || !this.response.dates || !this.response.dates[date.id]) {
-				return ProposalDateVote.Maybe
-			}
-			return this.response.dates[date.id].vote
-		},
+        participantVoteIcon(participantId, dateId) {
+            const vote = this.participantVote(participantId, dateId);
+            switch (vote) {
+                case ProposalDateVote.Yes: return 'VoteYesIcon';
+                case ProposalDateVote.No: return 'VoteNoIcon';
+                case ProposalDateVote.Maybe: return 'VoteMaybeIcon';
+                default: return 'VoteNoneIcon';
+            }
+        },
 
-		formatProposalDateCompact(date) {
-			if (!date) {
-				return ''
-			}
-			// Apply timezone offset and format very compact: "7/8 2PM"
-			const adjustedDate = moment(date).utcOffset(this.timezoneOffset)
-			return adjustedDate.format('M/D LT').replace(':00', '').replace(' ', ' ')
-		},
+        participantVoteLabel(participantId, dateId) {
+            const vote = this.participantVote(participantId, dateId);
+            switch (vote) {
+                case ProposalDateVote.Yes: return t('calendar', 'Yes');
+                case ProposalDateVote.No: return t('calendar', 'No');
+                case ProposalDateVote.Maybe: return t('calendar', 'Maybe');
+                default: return t('calendar', 'None');
+            }
+        },
 
-		participantVoteIcon(participantId, dateId) {
-			const vote = this.participantVote(participantId, dateId)
-			switch (vote) {
-				case ProposalDateVote.Yes:
-					return 'VoteYesIcon'
-				case ProposalDateVote.No:
-					return 'VoteNoIcon'
-				case ProposalDateVote.Maybe:
-					return 'VoteMaybeIcon'
-				default:
-					return 'VoteNoneIcon'
-			}
-		},
+        participantVote(participantId, dateId) {
+            if (!this.proposal || !participantId || !dateId) return null;
+            const vote = this.proposal.votes.find(
+                v => v.participant === participantId && v.date === dateId
+            );
+            return vote ? vote.vote : null;
+        },
+    },
 
-		participantVoteLabel(participantId, dateId) {
-			const vote = this.participantVote(participantId, dateId)
-			switch (vote) {
-				case ProposalDateVote.Yes:
-					return t('calendar', 'Yes')
-				case ProposalDateVote.No:
-					return t('calendar', 'No')
-				case ProposalDateVote.Maybe:
-					return t('calendar', 'Maybe')
-				default:
-					return t('calendar', 'None')
-			}
-		},
+    computed: {
+        /**
+         * Group proposal dates by day in the target timezone.
+         * Each date uses its own DST‑aware offset.
+         */
+        datesGrouped() {
+            if (!this.proposal) return [];
 
-		participantVote(participantId, dateId) {
-			if (!this.proposal || !participantId || !dateId) {
-				return null // No response / unknown
-			}
+            const dates = [...this.proposal.dates].sort((a, b) => {
+                if (!a.date || !b.date) return 0;
+                return a.date.getTime() - b.date.getTime();
+            });
 
-			// Find the vote for this participant and date combination
-			const vote = this.proposal.votes.find((v) => v.participant === participantId && v.date === dateId)
+            const groups: Record<string, ProposalDate[]> = {};
 
-			return vote ? vote.vote : null // null indicates no response
-		},
-	},
-}
+            for (const d of dates) {
+                if (!d.date) continue;
+
+                const offset = this.calculateTimezoneOffset(d.date, this.timezoneId);
+
+                const key = moment(d.date)
+                    .utcOffset(offset)
+                    .format('YYYY-MM-DD');
+
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(d);
+            }
+
+            return Object.entries(groups).map(([key, grp]) => {
+                const firstDate = grp[0].date;
+                const offset = this.calculateTimezoneOffset(firstDate, this.timezoneId);
+
+                return {
+                    key,
+                    label: moment(firstDate)
+                        .utcOffset(offset)
+                        .format('dddd, MMMM Do'),
+                    dates: grp,
+                };
+            });
+        },
+
+        columnCount() {
+            const participants = this.proposal?.participants?.length ?? 0;
+            return 2 + participants;
+        },
+    },
+};
+
 </script>
 
 <style lang="scss" scoped>
