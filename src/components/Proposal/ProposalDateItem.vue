@@ -57,56 +57,17 @@ export default {
                 return '';
             }
 
-            let timezoneOffset = 0;
+            const date = new Date(this.proposalDate.date);
 
-            try {
-                const targetDate = new Date(this.proposalDate.date);
-
-                // Formatters
-                const tzFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: this.timezoneId,
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                });
-
-                const utcFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'UTC',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                });
-
-                // Convert parts → ISO
-                const partsToISO = (parts: Intl.DateTimeFormatPart[]) => {
-                    const map: Record<string, string> = {};
-                    for (const p of parts) map[p.type] = p.value;
-                    return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;
-                };
-
-                const tzISO = partsToISO(tzFormatter.formatToParts(targetDate));
-                const utcISO = partsToISO(utcFormatter.formatToParts(targetDate));
-
-                const localAtTz = new Date(tzISO);
-                const utcAtTz = new Date(utcISO);
-
-                timezoneOffset = Math.round((localAtTz.getTime() - utcAtTz.getTime()) / (1000 * 60));
-            } catch (e) {
-                timezoneOffset = 0;
-            }
-
-            // Apply offset
-            const m = moment(this.proposalDate.date).utcOffset(timezoneOffset);
-
-            return m.format('dddd, MMMM D, LT');
+            // Format the date directly in the target timezone
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: this.timezoneId,
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            }).format(date);
         },
     },
 
@@ -114,6 +75,8 @@ export default {
         t,
     },
 };
+
+
 </script>
 
 <style lang="scss" scoped>
