@@ -179,71 +179,66 @@ export default {
     methods: {
         t,
 
-        /**
-         * Compute the timezone offset (in minutes) for a specific date
-         * using Intl.DateTimeFormat.formatToParts() — DST‑safe.
-         */
-        calculateTimezoneOffset(date: Date, timezoneId: string): number {
-            try {
-                const tzFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: timezoneId,
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                });
-
-                const utcFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'UTC',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                });
-
-                const partsToISO = (parts: Intl.DateTimeFormatPart[]) => {
-                    const map: Record<string, string> = {};
-                    for (const p of parts) map[p.type] = p.value;
-                    return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}:${map.second}Z`;
-                };
-
-                const tzISO = partsToISO(tzFormatter.formatToParts(date));
-                const utcISO = partsToISO(utcFormatter.formatToParts(date));
-
-                const localAtTz = new Date(tzISO);
-                const utcAtTz = new Date(utcISO);
-
-                return Math.round((localAtTz.getTime() - utcAtTz.getTime()) / (1000 * 60));
-            } catch {
-                return 0;
-            }
+        /** Format a date in the proposal timezone */
+        formatInTz(date: Date, options: Intl.DateTimeFormatOptions): string {
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: this.timezoneId,
+                ...options,
+            }).format(date);
         },
 
-        /**
-         * Format a time span (start → end) in the target timezone.
-         */
+        /** Extract YYYY-MM-DD in the proposal timezone for grouping */
+        getDayKeyInTz(date: Date): string {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: this.timezoneId,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            }).formatToParts(date);
+
+            const map: Record<string, string> = {};
+            for (const p of parts) map[p.type] = p.value;
+
+            return `${map.year}-${map.month}-${map.day}`;
+        },
+
+        /** Human-readable day label */
+        getDayLabelInTz(date: Date): string {
+            return this.formatInTz(date, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+            });
+        },
+
+        /** Time span in the proposal timezone */
         dateTimeSpan(date: Date) {
-            const offset = this.calculateTimezoneOffset(date, this.timezoneId);
+            const start = date;
+            const end = new Date(date.getTime() + this.proposal.duration * 60000);
 
-            const start = moment(date).utcOffset(offset);
-            const end = moment(date).utcOffset(offset).add(this.proposal.duration, 'minutes');
+            const startStr = this.formatInTz(start, {
+                hour: 'numeric',
+                minute: '2-digit',
+            });
 
-            return `${start.format('LT')} - ${end.format('LT')}`;
+            const endStr = this.formatInTz(end, {
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+
+            return `${startStr} - ${endStr}`;
         },
 
-        /**
-         * Compact date formatting (e.g., "7/8 2PM")
-         */
+        /** Compact date like "7/8 2:00 PM" */
         formatProposalDateCompact(date: Date) {
             if (!date) return '';
-            const offset = this.calculateTimezoneOffset(date, this.timezoneId);
-            return moment(date).utcOffset(offset).format('M/D LT').replace(':00', '');
+
+            return this.formatInTz(date, {
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
         },
 
         participantVoteIcon(participantId, dateId) {
@@ -276,10 +271,7 @@ export default {
     },
 
     computed: {
-        /**
-         * Group proposal dates by day in the target timezone.
-         * Each date uses its own DST‑aware offset.
-         */
+        /** Group proposal dates by day in the target timezone */
         datesGrouped() {
             if (!this.proposal) return [];
 
@@ -293,28 +285,17 @@ export default {
             for (const d of dates) {
                 if (!d.date) continue;
 
-                const offset = this.calculateTimezoneOffset(d.date, this.timezoneId);
-
-                const key = moment(d.date)
-                    .utcOffset(offset)
-                    .format('YYYY-MM-DD');
+                const key = this.getDayKeyInTz(d.date);
 
                 if (!groups[key]) groups[key] = [];
                 groups[key].push(d);
             }
 
-            return Object.entries(groups).map(([key, grp]) => {
-                const firstDate = grp[0].date;
-                const offset = this.calculateTimezoneOffset(firstDate, this.timezoneId);
-
-                return {
-                    key,
-                    label: moment(firstDate)
-                        .utcOffset(offset)
-                        .format('dddd, MMMM Do'),
-                    dates: grp,
-                };
-            });
+            return Object.entries(groups).map(([key, grp]) => ({
+                key,
+                label: this.getDayLabelInTz(grp[0].date),
+                dates: grp,
+            }));
         },
 
         columnCount() {
@@ -323,7 +304,6 @@ export default {
         },
     },
 };
-
 </script>
 
 <style lang="scss" scoped>
