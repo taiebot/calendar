@@ -959,11 +959,10 @@ export default defineStore('calendars', {
 		 * @param {number} data.fetchedTimeRangeId The time-range-id to remove
 		 */
 		deleteFetchedTimeRangeFromCalendarMutation({ calendar, fetchedTimeRangeId }) {
-			const index = this.calendarsById[calendar.id]?.fetchedTimeRanges.indexOf(fetchedTimeRangeId)
-
-			if (index !== -1) {
-				this.calendarsById[calendar.id].fetchedTimeRanges.splice(index, 1)
-			}
+			this.calendarsById[calendar.id].fetchedTimeRanges =
+				this.calendarsById[calendar.id].fetchedTimeRanges.filter(
+					id => id !== fetchedTimeRangeId
+				)
 		},
 
 		/**
