@@ -712,58 +712,53 @@ export default defineStore('calendars', {
 		 * @param {Date} data.to the last date to query events from
 		 * @return {Promise<void>}
 		 */
-		async getEventsFromCalendarInTimeRange({ calendar, from, to }) {
-			const fetchedTimeRangesStore = useFetchedTimeRangesStore()
-			const settingsStore = useSettingsStore()
-			const calendarObjectsStore = useCalendarObjectsStore()
-
-			this.calendarsById[calendar.id].loading = true
-			const response = await calendar.dav.findByType('VEVENT')
-			let responseTodo = []
-			if (settingsStore.showTasks) {
-				responseTodo = await calendar.dav.findByType('VTODO') // This is maybe too inefficient?
+		async getEventsFromCalendarInTimeRange({ calendar }) {
+		const settingsStore = useSettingsStore()
+		const calendarObjectsStore = useCalendarObjectsStore()
+			
+		// Mark calendar as loading
+		this.calendarsById[calendar.id].loading = true
+			
+		// Fetch ALL VEVENTs (no time range)
+		const response = await calendar.dav.findByType('VEVENT')
+			
+		// Optionally fetch VTODOs
+		let responseTodo = []
+		if (settingsStore.showTasks) {
+			responseTodo = await calendar.dav.findByType('VTODO')
+		}
+			
+		// Convert all fetched objects
+		const calendarObjects = []
+		const calendarObjectIds = []
+		
+		for (const r of response.concat(responseTodo)) {
+			try {
+				const objs = mapCDavObjectToCalendarObject(r, calendar.id)
+				objs.forEach((calendarObject) => {
+					calendarObjects.push(calendarObject)
+					calendarObjectIds.push(calendarObject.id)
+				})
+			} catch (e) {
+				console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
+					response: r,
+				})
 			}
-			fetchedTimeRangesStore.addTimeRange({
-				calendarId: calendar.id,
-				from: getUnixTimestampFromDate(from),
-				to: getUnixTimestampFromDate(to),
-				lastFetched: getUnixTimestampFromDate(dateFactory()),
-				calendarObjectIds: [],
-			})
-			const insertId = fetchedTimeRangesStore.lastTimeRangeInsertId
-
-			this.calendarsById[calendar.id].fetchedTimeRanges.push(insertId)
-
-			const calendarObjects = []
-			const calendarObjectIds = []
-			for (const r of response.concat(responseTodo)) {
-				try {
-					const objs = mapCDavObjectToCalendarObject(r, calendar.id)
-					objs.forEach((calendarObject) => {
-						calendarObjects.push(calendarObject)
-						calendarObjectIds.push(calendarObject.id)
-					})
-				} catch (e) {
-					console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
-						response: r,
-					})
-				}
+		}
+			
+		// Insert or update objects in the store
+		calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
+			
+		// Track object IDs in the calendar
+		for (const id of calendarObjectIds) {
+			if (!this.calendarsById[calendar.id].calendarObjects.includes(id)) {
+				this.calendarsById[calendar.id].calendarObjects.push(id)
 			}
-
-			calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
-			for (const calendarObjectId of calendarObjectIds) {
-				if (this.calendarsById[calendar.id].calendarObjects.indexOf(calendarObjectId) === -1) {
-					this.calendarsById[calendar.id].calendarObjects.push(calendarObjectId)
-				}
-			}
-			fetchedTimeRangesStore.appendCalendarObjectIdsToTimeFrame({
-				timeRangeId: insertId,
-				calendarObjectIds,
-			})
-
-			this.calendarsById[calendar.id].loading = false
-			return fetchedTimeRangesStore.lastTimeRangeInsertId
-		},
+		}
+			
+		// Done loading
+		this.calendarsById[calendar.id].loading = false
+	}
 
 		/**
 		 * Retrieve one object
