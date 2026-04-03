@@ -758,7 +758,7 @@ export default defineStore('calendars', {
 			
 			// Done loading
 			this.calendarsById[calendar.id].loading = false
-		}
+		},
 
 		/**
 		 * Retrieve one object
