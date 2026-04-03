@@ -718,7 +718,7 @@ export default defineStore('calendars', {
 			const calendarObjectsStore = useCalendarObjectsStore()
 
 			this.calendarsById[calendar.id].loading = true
-			const response = await calendar.dav.findByTypeInTimeRange('VEVENT', from, to)
+			const response = await calendar.dav.findByType('VEVENT')
 			let responseTodo = []
 			if (settingsStore.showTasks) {
 				responseTodo = await calendar.dav.findByType('VTODO') // This is maybe too inefficient?
