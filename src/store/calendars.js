@@ -713,52 +713,52 @@ export default defineStore('calendars', {
 		 * @return {Promise<void>}
 		 */
 		async getEventsFromCalendarInTimeRange({ calendar }) {
-		const settingsStore = useSettingsStore()
-		const calendarObjectsStore = useCalendarObjectsStore()
+			const settingsStore = useSettingsStore()
+			const calendarObjectsStore = useCalendarObjectsStore()
 			
-		// Mark calendar as loading
-		this.calendarsById[calendar.id].loading = true
+			// Mark calendar as loading
+			this.calendarsById[calendar.id].loading = true
 			
-		// Fetch ALL VEVENTs (no time range)
-		const response = await calendar.dav.findByType('VEVENT')
+			// Fetch ALL VEVENTs (no time range)
+			const response = await calendar.dav.findByType('VEVENT')
 			
-		// Optionally fetch VTODOs
-		let responseTodo = []
-		if (settingsStore.showTasks) {
-			responseTodo = await calendar.dav.findByType('VTODO')
-		}
+			// Optionally fetch VTODOs
+			let responseTodo = []
+			if (settingsStore.showTasks) {
+				responseTodo = await calendar.dav.findByType('VTODO')
+			}
 			
-		// Convert all fetched objects
-		const calendarObjects = []
-		const calendarObjectIds = []
+			// Convert all fetched objects
+			const calendarObjects = []
+			const calendarObjectIds = []
 		
-		for (const r of response.concat(responseTodo)) {
-			try {
-				const objs = mapCDavObjectToCalendarObject(r, calendar.id)
-				objs.forEach((calendarObject) => {
-					calendarObjects.push(calendarObject)
-					calendarObjectIds.push(calendarObject.id)
-				})
-			} catch (e) {
-				console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
-					response: r,
-				})
+			for (const r of response.concat(responseTodo)) {
+				try {
+					const objs = mapCDavObjectToCalendarObject(r, calendar.id)
+					objs.forEach((calendarObject) => {
+						calendarObjects.push(calendarObject)
+						calendarObjectIds.push(calendarObject.id)
+					})
+				} catch (e) {
+					console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
+						response: r,
+					})
+				}
 			}
-		}
 			
-		// Insert or update objects in the store
-		calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
+			// Insert or update objects in the store
+			calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
 			
-		// Track object IDs in the calendar
-		for (const id of calendarObjectIds) {
-			if (!this.calendarsById[calendar.id].calendarObjects.includes(id)) {
-				this.calendarsById[calendar.id].calendarObjects.push(id)
+			// Track object IDs in the calendar
+			for (const id of calendarObjectIds) {
+				if (!this.calendarsById[calendar.id].calendarObjects.includes(id)) {
+					this.calendarsById[calendar.id].calendarObjects.push(id)
+				}
 			}
-		}
 			
-		// Done loading
-		this.calendarsById[calendar.id].loading = false
-	}
+			// Done loading
+			this.calendarsById[calendar.id].loading = false
+		}
 
 		/**
 		 * Retrieve one object
