@@ -65,23 +65,22 @@ function mapCDavObjectToCalendarObject(dav, calendarId) {
 	if (!calendarComponent) {
 		throw new Error('Empty calendar object')
 	}
-
-	const vObjectIterator = calendarComponent.getVObjectIterator()
-	const firstVObject = vObjectIterator.next().value
-
-	return getDefaultCalendarObjectObject({
-		id: btoa(dav.url),
+	
+	const vObjects = Array.from(calendarComponent.getVObjectIterator())
+		
+	return vObjects.map(vObject => getDefaultCalendarObjectObject({
+		id: btoa(dav.url) + '#' + vObject.uid,
 		calendarId,
 		dav,
 		calendarComponent: markRaw(calendarComponent),
-		uid: firstVObject.uid,
+		uid: vObject.uid,
 		uri: dav.url,
-		objectType: firstVObject.name,
-		isEvent: firstVObject.name === COMPONENT_NAME_EVENT,
-		isJournal: firstVObject.name === COMPONENT_NAME_JOURNAL,
-		isTodo: firstVObject.name === COMPONENT_NAME_VTODO,
+		objectType: vObject.name,
+		isEvent: vObject.name === COMPONENT_NAME_EVENT,
+		isJournal: vObject.name === COMPONENT_NAME_JOURNAL,
+		isTodo: vObject.name === COMPONENT_NAME_VTODO,
 		existsOnServer: true,
-	})
+	}))
 }
 
 /**
