@@ -312,13 +312,15 @@ export default defineStore('calendars', {
 
 			vobjects.forEach((vobject) => {
 				try {
-					const calendarObject = mapCDavObjectToCalendarObject(vobject, undefined)
-
+					const calendarObjects = mapCDavObjectToCalendarObject(vobject, undefined)
+					
+					calendarObjects.forEach((calendarObject) => {
 					if (this.deletedCalendarObjects.some((c) => c.uri === calendarObject.uri)) {
 						// This vobject is already known
 						return
 					}
 					this.deletedCalendarObjects.push(calendarObject)
+				})
 				} catch (error) {
 					console.error('could not convert calendar object', vobject, error)
 				}
@@ -478,12 +480,14 @@ export default defineStore('calendars', {
 			this.deletedCalendarObjects = this.deletedCalendarObjects.filter((vo) => vo.id !== vobject.id)
 
 			// Delete cached time range that includes the restored event
-			const calendarObject = mapCDavObjectToCalendarObject(vobject.dav, undefined)
-			const component = calendarObject.calendarComponent.getFirstComponent(vobject.objectType)
-			const timeRange = fetchedTimeRangesStore.getTimeRangeForCalendarCoveringRange(
-				vobject.calendar.id,
-				component.startDate?.unixTime,
-				component.endDate?.unixTime,
+			const calendarObjects = mapCDavObjectToCalendarObject(vobject.dav, undefined)
+			
+			calendarObjects.forEach((calendarObject) => {
+				const component = calendarObject.calendarComponent.getFirstComponent(vobject.objectType)
+				const timeRange = fetchedTimeRangesStore.getTimeRangeForCalendarCoveringRange(
+					vobject.calendar.id,
+					component.startDate?.unixTime,
+					component.endDate?.unixTime,
 			)
 			if (timeRange) {
 				this.deleteFetchedTimeRangeFromCalendarMutation({
@@ -732,14 +736,15 @@ export default defineStore('calendars', {
 			const calendarObjectIds = []
 			for (const r of response.concat(responseTodo)) {
 				try {
-					const calendarObject = mapCDavObjectToCalendarObject(r, calendar.id)
-					calendarObjects.push(calendarObject)
-					calendarObjectIds.push(calendarObject.id)
+					const objs = mapCDavObjectToCalendarObject(r, calendar.id)
+					objs.forEach((calendarObject) => {
+						calendarObjects.push(calendarObject)
+						calendarObjectIds.push(calendarObject.id)
+					})
 				} catch (e) {
 					console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
-						response: r,
-					})
-				}
+					response: r,
+				})
 			}
 
 			calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
@@ -783,19 +788,21 @@ export default defineStore('calendars', {
 			if (!this.calendarsById[calendarId]) {
 				return Promise.reject(new Error(''))
 			}
-
+			
 			const calendar = this.calendarsById[calendarId]
 			const vObject = await calendar.dav.find(objectFileName)
-			const calendarObject = mapCDavObjectToCalendarObject(vObject, calendar.id)
-			calendarObjectsStore.appendCalendarObjectMutation({ calendarObject })
-			this.addCalendarObjectToCalendarMutation({
-				calendar: {
-					id: calendarId,
-				},
-				calendarObjectId: calendarObject.id,
+			
+			const calendarObjects = mapCDavObjectToCalendarObject(vObject, calendar.id)
+			calendarObjects.forEach((calendarObject) => {
+				calendarObjectsStore.appendCalendarObjectMutation({ calendarObject })
+				this.addCalendarObjectToCalendarMutation({
+					calendar: {
+						id: calendarId,
+					},
+					calendarObjectId: calendarObject.id,
+				})
 			})
-
-			return calendarObject
+			return calendarObjects
 		},
 
 		/**
@@ -866,16 +873,19 @@ export default defineStore('calendars', {
 							console.error(error)
 							return
 						}
-
-						const calendarObject = mapCDavObjectToCalendarObject(davObject, calendarId)
-						calendarObjectsStore.appendCalendarObjectMutation({ calendarObject })
-						this.addCalendarObjectToCalendarMutation({
-							calendar,
-							calendarObjectId: calendarObject.id,
-						})
-						fetchedTimeRangesStore.addCalendarObjectIdToAllTimeRangesOfCalendar({
-							calendarId: calendar.id,
-							calendarObjectId: calendarObject.id,
+						
+						const calendarObjects = mapCDavObjectToCalendarObject(davObject, calendarId)
+						calendarObjects.forEach((calendarObject) => {
+							calendarObjectsStore.appendCalendarObjectMutation({ calendarObject })
+							
+							this.addCalendarObjectToCalendarMutation({
+								calendar,
+								calendarObjectId: calendarObject.id,
+							})
+							fetchedTimeRangesStore.addCalendarObjectIdToAllTimeRangesOfCalendar({
+								calendarId: calendar.id,
+								calendarObjectId: calendarObject.id,
+							})
 						})
 						importStateStore.accepted++
 					}))
