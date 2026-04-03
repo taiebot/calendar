@@ -488,7 +488,7 @@ export default defineStore('calendars', {
 					vobject.calendar.id,
 					component.startDate?.unixTime,
 					component.endDate?.unixTime,
-			)
+				)
 			if (timeRange) {
 				this.deleteFetchedTimeRangeFromCalendarMutation({
 					calendar: vobject.calendar,
@@ -497,7 +497,7 @@ export default defineStore('calendars', {
 				fetchedTimeRangesStore.removeTimeRange({
 					timeRangeId: timeRange.id,
 				})
-			}
+			})
 
 			// Trigger calendar refresh
 			calendarObjectsStore.modificationCount++
