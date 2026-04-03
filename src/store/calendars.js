@@ -497,6 +497,7 @@ export default defineStore('calendars', {
 				fetchedTimeRangesStore.removeTimeRange({
 					timeRangeId: timeRange.id,
 				})
+			}
 			})
 
 			// Trigger calendar refresh
