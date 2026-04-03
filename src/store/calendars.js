@@ -745,8 +745,9 @@ export default defineStore('calendars', {
 					})
 				} catch (e) {
 					console.error(`could not convert calendar object of calendar ${calendar.id}`, e, {
-					response: r,
-				})
+						response: r,
+					})
+				}
 			}
 
 			calendarObjectsStore.appendOrUpdateCalendarObjectsMutation({ calendarObjects })
