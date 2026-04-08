@@ -645,17 +645,28 @@ class ProposalService {
 	private function constructCalendarBlocker(IUser $user, ProposalObject $proposal): VCalendar {
 		// construct calendar object with events
 		$proposalDates = [];
-		$firstProposalDate = null;
-		foreach ($proposal->getDates()->sortByDate() as $proposalDate) {
+		$dates = [];
+		foreach ($proposal->getDates() as $proposalDate) {
 			$date = $proposalDate->getDate();
-			if ($firstProposalDate === null) {
-				$firstProposalDate = $date;
+			if ($date !== null) {
+				$dates[] = $date;
 			}
-			$proposalDates[] = $date->format('Ymd\THis\Z');
 		}
-		if ($firstProposalDate === null) {
+		//Always sort explicitly
+		usort($dates, fn ($a, $b) => $a <=> $b);
+
+		if (empty($dates)) {
 			throw new \InvalidArgumentException('Cannot construct calendar blocker without at least one proposal date');
 		}
+
+		// Correct DTSTART
+		$firstProposalDate = $dates[0];
+
+		// Build RDATE list
+		foreach ($dates as $date) {
+			$proposalDates[] = $date;
+		}
+
 		$vObject = new VCalendar();
 		/** @var VEvent $vEvent */
 		$vEvent = $vObject->add('VEVENT', []);
