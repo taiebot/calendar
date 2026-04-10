@@ -267,6 +267,25 @@ class ProposalService {
 			$this->proposalVoteMapper->deleteByDateId($user->getUID(), $date->getId());
 			$this->proposalDateMapper->deleteById($user->getUID(), $date->getId());
 		}
+
+		$participantDelta = $currentProposal->getParticipants()->compare($mutatedProposal->getParticipants());
+		$dateDelta = $currentProposal->getDates()->compare($mutatedProposal->getDates());
+
+		// 👇 ADD THIS BLOCK RIGHT HERE
+		$this->logger->debug('DELTA DEBUG', [
+    		'participants' => [
+        		'added' => array_map(fn($p) => $p->getId(), $participantDelta['added']),
+        		'modified' => array_map(fn($p) => $p->getId(), $participantDelta['modified']),
+        		'deleted' => array_map(fn($p) => $p->getId(), $participantDelta['deleted']),
+    		],
+    		'dates' => [
+        		'added' => array_map(fn($d) => $d->getId(), $dateDelta['added']),
+        		'modified' => array_map(fn($d) => $d->getId(), $dateDelta['modified']),
+        		'deleted' => array_map(fn($d) => $d->getId(), $dateDelta['deleted']),
+    		],
+		]);
+
+		
 		// retrieve full proposal with participants, dates, and votes
 		$proposal = $this->fetchProposal($user, $mutatedProposalEntry->getId());
 
@@ -275,6 +294,7 @@ class ProposalService {
 
 		// generate iTip for internal participants
 		$this->syncCalendarBlockers($user, $proposal, 'M');
+
 
 		return $proposal;
 	}
