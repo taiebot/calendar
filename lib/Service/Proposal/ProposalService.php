@@ -226,6 +226,7 @@ class ProposalService {
 		$mutatedProposalEntry = $mutatedProposal->toStore();
 		$mutatedProposalEntry->setId($currentProposal->getId());
 		$mutatedProposalEntry->setUid($user->getUID());
+		$mutatedProposalEntry->setUuid($currentProposal->getUuid());
 		$this->proposalMapper->update($mutatedProposalEntry);
 		// compare, convert and store participants objects
 		$participantDelta = $currentProposal->getParticipants()->compare($mutatedProposal->getParticipants());
