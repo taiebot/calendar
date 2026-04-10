@@ -236,6 +236,7 @@ class ProposalService {
 				$mutatedParticipantEntry->setUid($user->getUID());
 				$mutatedParticipantEntry->setPid($mutatedProposalEntry->getId());
 				if ($mutation === 'modified') {
+					$mutatedParticipantEntry->setId($participant->getId());
 					$this->proposalParticipantMapper->update($mutatedParticipantEntry);
 				} else {
 					$mutatedParticipantEntry->setToken(md5(random_bytes(32)));
@@ -254,6 +255,7 @@ class ProposalService {
 				$mutatedDateEntry->setUid($user->getUID());
 				$mutatedDateEntry->setPid($mutatedProposalEntry->getId());
 				if ($mutation === 'modified') {
+					$mutatedDateEntry->setId($date->getId()); 
 					$this->proposalDateMapper->update($mutatedDateEntry);
 					$this->proposalVoteMapper->deleteByDateId($user->getUID(), $date->getId());
 				} else {
