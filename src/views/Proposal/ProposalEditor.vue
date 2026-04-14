@@ -213,9 +213,19 @@
 		<NcDialog
 			:open="showConvertDialog"
 			:name="t('calendar', 'Create meeting')"
-			:message="convertDialogMessage"
 			:buttons="convertDialogButtons"
 			@update:open="showConvertDialog = $event" />
+
+			<div style="display:flex; flex-direction:column; gap:12px;">
+				<div>{{ convertDialogMessage }}</div>
+
+				<NcSelect
+					v-if="userCalendars.length"
+					v-model="selectedCalendarUri"
+					:options="userCalendars.map(c => ({ value: c.uri, label: c.displayName }))"
+					:label="t('calendar', 'Select calendar')" />
+			</div>
+
 	</div>
 </template>
 
@@ -247,6 +257,7 @@ import NcRadioGroup from '@nextcloud/vue/components/NcRadioGroup'
 import NcRadioGroupButton from '@nextcloud/vue/components/NcRadioGroupButton'
 import NcTextArea from '@nextcloud/vue/components/NcTextArea'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
+import NcSelect from '@nextcloud/vue/components/NcSelect'
 import InviteesListSearch from '@/components/Editor/Invitees/InviteesListSearch.vue'
 import ProposalDateItem from '@/components/Proposal/ProposalDateItem.vue'
 import ProposalParticipantItem from '@/components/Proposal/ProposalParticipantItem.vue'
@@ -288,6 +299,7 @@ export default {
 		NcModal,
 		NcRadioGroup,
 		NcRadioGroupButton,
+		NcSelect,
 		NcTextField,
 		NcTextArea,
 		FullCalendar,
@@ -329,6 +341,8 @@ export default {
 			pendingDeleteProposal: null as Proposal | null,
 			showConvertDialog: false,
 			pendingConvertDate: null as ProposalDate | null,
+			userCalendars: [] as Array<{ uri: string, displayName: string }>,
+			selectedCalendarUri: null as string | null,	
 		}
 	},
 
@@ -588,7 +602,8 @@ export default {
 		onModalOpen() {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
-
+			this.fetchUserCalendars()
+			
 			// Ensure proposal has default values to prevent null binding errors
 			if (this.selectedProposal) {
 				this.selectedProposal.title = this.selectedProposal.title || ''
@@ -628,6 +643,19 @@ export default {
 		onProposalDestroy(proposal: Proposal) {
 			this.pendingDeleteProposal = proposal
 			this.showDeleteDialog = true
+		},
+
+		async fetchUserCalendars() {
+			try {
+				const calendars = await this.proposalStore.getUserCalendars()
+				this.userCalendars = calendars
+
+				if (calendars.length > 0) {
+					this.selectedCalendarUri = calendars[0].uri
+				}
+			} catch (e) {
+			console.error('Failed to fetch calendars', e)
+			}
 		},
 
 		async onProposalSave() {
@@ -812,7 +840,7 @@ export default {
 			const dateString = this.formatProposalDate(date.date)
 			try {
 				showSuccess(t('calendar', 'Creating meeting for {date}', { date: dateString }))
-				await this.proposalStore.convertProposal(this.selectedProposal, date, this.userTimezone)
+				await this.proposalStore.convertProposal(this.selectedProposal, date, this.userTimezone, this.selectedCalendarUri)
 				showSuccess(t('calendar', 'Successfully created meeting for {date}', { date: dateString }))
 				this.onModalClose()
 			} catch (error) {
