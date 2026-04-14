@@ -78,6 +78,11 @@
 							v-model="selectedProposal.description"
 							class="proposal-editor__proposal-description"
 							:label="t('calendar', 'Description')" />
+						<NcSelect
+							v-if="userCalendars.length"
+							v-model="selectedCalendarUri"
+							:options="userCalendars.map(c => ({ value: c.uri, label: c.displayName }))"
+							:label="t('calendar', 'Select calendar')"/>
 						<div class="proposal-editor__proposal-location-container">
 							<NcTextField
 								v-if="!settingsStore.talkEnabled || !modalEditLocationState"
