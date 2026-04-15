@@ -621,7 +621,10 @@ export default {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
 			this.fetchUserCalendars()
-			console.log(this.userCalendars)
+			console.log('userCalendars:', this.userCalendars)
+			console.log('selectedCalendar:', this.selectedCalendar)
+
+			
 			
 			// Ensure proposal has default values to prevent null binding errors
 			if (this.selectedProposal) {
@@ -672,6 +675,8 @@ export default {
 				if (calendars.length > 0) {
 					this.selectedCalendarUri = calendars[0].uri
 				}
+			console.log('Fetched calendars:', calendars)
+			console.log('selectedCalendarUri:', this.selectedCalendarUri)
 			} catch (e) {
 			console.error('Failed to fetch calendars', e)
 			}
