@@ -352,8 +352,8 @@ export default {
 			pendingDeleteProposal: null as Proposal | null,
 			showConvertDialog: false,
 			pendingConvertDate: null as ProposalDate | null,
-			userCalendars: [] as Array<{ uri: string, displayName: string }>,
-			selectedCalendarUri: null as string | null,	
+			userCalendars: [],
+			selectedCalendarUri: null,	
 		}
 	},
 
@@ -574,6 +574,14 @@ export default {
 			}
 		},
 
+		// Watch for calendars being loaded by the calendars store
+    	'calendarsStore.initialCalendarsLoaded'(loaded) {
+        	if (loaded) {
+            	this.fetchUserCalendars()
+        	}
+    	},
+
+
 		calendarDateSpan(newVal) {
 			if (newVal !== this.calendarSpanDays) {
 				this.calendarSpanDays = newVal
@@ -622,7 +630,11 @@ export default {
 		onModalOpen() {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
-			this.fetchUserCalendars()
+
+			if (this.calendarsStore.initialCalendarsLoaded) {
+    			this.fetchUserCalendars()
+			}
+
 			console.log('userCalendars:', this.userCalendars)
 			console.log('selectedCalendar:', this.selectedCalendar)
 
