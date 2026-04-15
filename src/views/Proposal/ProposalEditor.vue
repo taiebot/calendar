@@ -275,6 +275,7 @@ import FullCalendarMoment from '@/fullcalendar/localization/momentPlugin.js'
 import FullCalendarTimezones from '@/fullcalendar/timezones/vtimezoneNamedTimezoneImpl.js'
 import { ProposalDate, ProposalParticipant } from '@/models/proposals/proposals'
 // types, object and stores
+import useCalendarsStore from '@/store/calendars'
 import usePrincipalStore from '@/store/principals.js'
 import useProposalStore from '@/store/proposalStore'
 import useSettingsStore from '@/store/settings.js'
@@ -328,6 +329,7 @@ export default {
 
 	data() {
 		return {
+			calendarsStore: useCalendarsStore(),
 			principalStore: usePrincipalStore(),
 			settingsStore: useSettingsStore(),
 			proposalStore: useProposalStore(),
@@ -669,7 +671,7 @@ export default {
 
 		async fetchUserCalendars() {
 			try {
-				const calendars = await this.proposalStore.getUserCalendars()
+				const calendars = this.calendarsStore.calendars
 				this.userCalendars = calendars
 
 				if (calendars.length > 0) {
