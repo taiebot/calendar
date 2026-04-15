@@ -228,7 +228,7 @@
 </template>
 
 <script lang="ts">
-import CalendarPickerHeader from '../components/CalendarPickerHeader.vue'
+import CalendarPickerHeader from '../components/Editor/CalendarPickerHeader.vue'
 import type { Proposal } from '@/models/proposals/proposals'
 
 import FullCalendarInteraction from '@fullcalendar/interaction'
