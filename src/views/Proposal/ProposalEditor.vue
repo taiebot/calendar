@@ -65,11 +65,6 @@
             <!-- EDIT / CREATE MODE -->
             <div v-if="modalMode === 'create' || modalMode === 'modify'" class="proposal-editor__content">
                 <div class="proposal-editor__column-left">
-					
-					<!-- Calendar Picker -->
-				    <CalendarPickerHeader
-					:calendars="userCalendars"
-					v-model="selectedCalendarUri" />
 
                     <!-- Title -->
                     <div class="proposal-editor__row-title">
@@ -228,7 +223,10 @@
             :name="t('calendar', 'Create meeting')"
             :message="convertDialogMessage"
             :buttons="convertDialogButtons"
-            @update:open="show
+            @update:open="showConvertDialog = $event" />
+    </div>
+</template>
+
 <script lang="ts">
 import CalendarPickerHeader from '../components/CalendarPickerHeader.vue'
 import type { Proposal } from '@/models/proposals/proposals'
