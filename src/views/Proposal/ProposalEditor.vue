@@ -68,6 +68,7 @@
 
 					<!-- CalendarPicker -->
 					<CalendarPickerHeader
+						v-if="userCalendars.length > 0"
 						:value="selectedCalendar"
 						:calendars="userCalendars"
 						:isReadOnly="false"
@@ -620,6 +621,7 @@ export default {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
 			this.fetchUserCalendars()
+			console.log(this.userCalendars)
 			
 			// Ensure proposal has default values to prevent null binding errors
 			if (this.selectedProposal) {
