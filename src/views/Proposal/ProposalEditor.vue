@@ -360,7 +360,7 @@ export default {
 	computed: {
 
 		selectedCalendar() {
-        	return this.userCalendars.find(c => c.uri === this.selectedCalendarUri) || this.userCalendars[0]
+        	return this.userCalendars.find(c => c.uri === this.selectedCalendarUri) || null
     	},
 
 		userTimezone(): string {
