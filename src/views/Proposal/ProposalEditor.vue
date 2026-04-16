@@ -63,12 +63,12 @@
             </div>
 
             <!-- EDIT / CREATE MODE -->
-            <div v-if="modalMode === 'create' || modalMode === 'modify'" class="proposal-editor__content">
+			<div v-if="selectedProposal && (modalMode === 'create' || modalMode === 'modify')" class="proposal-editor__content" >
                 <div class="proposal-editor__column-left">
 
 					<!-- CalendarPicker -->
 					<CalendarPickerHeader
-						v-if="userCalendars.length > 0"
+						v-if="selectedProposal && userCalendars.length > 0"
 						:value="selectedCalendar"
 						:calendars="userCalendars"
 						:isReadOnly="false"
@@ -693,14 +693,14 @@ export default {
 			const all = this.calendarsStore.calendars
 
     		const calendars = all.filter(c =>
-        		c.components?.includes('VEVENT') &&
+        		(c.components?.includes('VEVENT') || !c.components) &&
         		!c.readOnly &&
         		c.type !== 'birthday'
     		)
 
     		this.userCalendars = calendars
 
-    		if (calendars.length > 0) {
+    		if (!this.selectedCalendarUri && calendars.length > 0) {
         		this.selectedCalendarUri = calendars[0].uri
     		}
 		},
