@@ -621,6 +621,10 @@ export default {
 
 		onCalendarSelect(calendar) {
 			this.selectedCalendarUri = calendar.uri
+
+			if (this.selectedProposal) {
+        		this.selectedProposal.calendarUri = calendar.uri
+    		}
     	},
 
 		onWindowResize(): void {
@@ -630,6 +634,10 @@ export default {
 		onModalOpen() {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
+
+			if (this.selectedProposal?.calendarUri) {
+        		this.selectedCalendarUri = this.selectedProposal.calendarUri
+    		}
 
 			if (this.calendarsStore.initialCalendarsLoaded) {
     			this.fetchUserCalendars()
@@ -681,19 +689,20 @@ export default {
 			this.showDeleteDialog = true
 		},
 
-		async fetchUserCalendars() {
-			try {
-				const calendars = this.calendarsStore.calendars
-				this.userCalendars = calendars
+		fetchUserCalendars() {
+			const all = this.calendarsStore.calendars
 
-				if (calendars.length > 0) {
-					this.selectedCalendarUri = calendars[0].uri
-				}
-			console.log('Fetched calendars:', calendars)
-			console.log('selectedCalendarUri:', this.selectedCalendarUri)
-			} catch (e) {
-			console.error('Failed to fetch calendars', e)
-			}
+    		const calendars = all.filter(c =>
+        		c.components?.includes('VEVENT') &&
+        		!c.readOnly &&
+        		c.type !== 'birthday'
+    		)
+
+    		this.userCalendars = calendars
+
+    		if (calendars.length > 0) {
+        		this.selectedCalendarUri = calendars[0].uri
+    		}
 		},
 
 		async onProposalSave() {
