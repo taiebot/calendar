@@ -364,7 +364,7 @@ export default {
         		return this.userCalendars[0] || null
     		}
 
-			const match = this.userCalendars.find(c => c.id === this.selectedCalendarId)
+			const match = this.userCalendars.find(c => c.id === this.selectedCalendarId) || this.userCalendars[0] || null
 
 			if (!match) {
         		console.warn('Selected calendar not found:', this.selectedCalendarId)
@@ -630,10 +630,10 @@ export default {
 		t,
 
 		onCalendarSelect(calendar) {
-			this.selectedCalendarId = calendar.id
+			this.selectedCalendarId = calendar
 
 			if (this.selectedProposal) {
-        		this.selectedProposal.calendarId = calendar.id
+        		this.selectedProposal.calendarId = calendar
     		}
     	},
 
@@ -709,6 +709,10 @@ export default {
     		)
 
     		this.userCalendars = calendars
+
+			console.log(
+  				this.userCalendars.includes(this.selectedCalendar)
+			)
 
     		if (!this.selectedCalendarId && calendars.length > 0) {
         		this.selectedCalendarId = calendars[0].id
