@@ -353,21 +353,21 @@ export default {
 			showConvertDialog: false,
 			pendingConvertDate: null as ProposalDate | null,
 			userCalendars: [],
-			selectedCalendarUri: null,	
+			selectedCalendarId: null,	
 		}
 	},
 
 	computed: {
 
 		selectedCalendar() {
-			if (!this.selectedCalendarUri) {
+			if (!this.selectedCalendarId) {
         		return this.userCalendars[0] || null
     		}
 
-			const match = this.userCalendars.find(c => c.uri === this.selectedCalendarUri)
+			const match = this.userCalendars.find(c => c.id === this.selectedCalendarId) || this.userCalendars[0] || null
 
 			if (!match) {
-        		console.warn('Selected calendar not found:', this.selectedCalendarUri)
+        		console.warn('Selected calendar not found:', this.selectedCalendarId)
     		}
 
 			return match || this.userCalendars[0] || null
@@ -630,10 +630,10 @@ export default {
 		t,
 
 		onCalendarSelect(calendar) {
-			this.selectedCalendarUri = calendar.uri
+			this.selectedCalendarId = calendar.id
 
 			if (this.selectedProposal) {
-        		this.selectedProposal.calendarUri = calendar.uri
+        		this.selectedProposal.calendarId = calendar
     		}
     	},
 
@@ -645,8 +645,8 @@ export default {
 			this.selectedProposal = this.proposalStore.modalProposal
 			this.modalMode = this.proposalStore.modalMode
 
-			if (this.selectedProposal?.calendarUri) {
-        		this.selectedCalendarUri = this.selectedProposal.calendarUri
+			if (this.selectedProposal?.calendarId) {
+        		this.selectedCalendarId = this.selectedProposal.calendarId
     		}
 
 			if (this.calendarsStore.initialCalendarsLoaded) {
@@ -710,12 +710,16 @@ export default {
 
     		this.userCalendars = calendars
 
-    		if (!this.selectedCalendarUri && calendars.length > 0) {
-        		this.selectedCalendarUri = calendars[0].uri
+			console.log(
+  				this.userCalendars.includes(this.selectedCalendar)
+			)
+
+    		if (!this.selectedCalendarId && calendars.length > 0) {
+        		this.selectedCalendarId = calendars[0].id
     		}
 
-			if (this.selectedCalendarUri && !calendars.find(c => c.uri === this.selectedCalendarUri)) {
-        		this.selectedCalendarUri = calendars[0]?.uri || null
+			if (this.selectedCalendarId && !calendars.find(c => c.id === this.selectedCalendarId)) {
+        		this.selectedCalendarId = calendars[0]?.id || null
     		}
 		},
 
@@ -901,7 +905,7 @@ export default {
 			const dateString = this.formatProposalDate(date.date)
 			try {
 				showSuccess(t('calendar', 'Creating meeting for {date}', { date: dateString }))
-				await this.proposalStore.convertProposal(this.selectedProposal, date, this.userTimezone, this.selectedCalendarUri)
+				await this.proposalStore.convertProposal(this.selectedProposal, date, this.userTimezone, this.selectedCalendarId)
 				showSuccess(t('calendar', 'Successfully created meeting for {date}', { date: dateString }))
 				this.onModalClose()
 			} catch (error) {
