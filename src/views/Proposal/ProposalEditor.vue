@@ -360,9 +360,17 @@ export default {
 	computed: {
 
 		selectedCalendar() {
-        	        return this.userCalendars.find(c => c.uri === this.selectedCalendarUri)
-        			|| this.userCalendars[0]
-        			|| {}
+			if (!this.selectedCalendarUri) {
+        		return this.userCalendars[0] || null
+    		}
+
+			const match = this.userCalendars.find(c => c.uri === this.selectedCalendarUri)
+
+			if (!match) {
+        		console.warn('Selected calendar not found:', this.selectedCalendarUri)
+    		}
+
+			return match || this.userCalendars[0] || null
     	},
 
 		userTimezone(): string {
@@ -622,10 +630,10 @@ export default {
 		t,
 
 		onCalendarSelect(calendar) {
-			this.selectedCalendarUri = calendar.id
+			this.selectedCalendarUri = calendar.uri
 
 			if (this.selectedProposal) {
-        		this.selectedProposal.calendarUri = calendar.id
+        		this.selectedProposal.calendarUri = calendar.uri
     		}
     	},
 
