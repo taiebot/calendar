@@ -69,6 +69,7 @@
 					<!-- CalendarPicker -->
 					<CalendarPickerHeader
 						v-if="selectedProposal && userCalendars.length > 0"
+						:key="selectedCalendarId"
 						:value="selectedCalendar"
 						:calendars="userCalendars"
 						:isReadOnly="false"
