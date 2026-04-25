@@ -74,7 +74,7 @@
 						:calendars="userCalendars"
 						:isReadOnly="false"
 						:isViewedByAttendee="false"
-						@update:modelValue="onCalendarSelect" />
+						@update:value="onCalendarSelect" />
 
                     <!-- Title -->
                     <div class="proposal-editor__row-title">
