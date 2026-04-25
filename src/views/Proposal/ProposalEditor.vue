@@ -632,6 +632,7 @@ export default {
 
 		onCalendarSelect(calendar) {
 			this.selectedCalendarId = calendar.id
+			console.log('SELECTED:', calendar)
 
 			if (this.selectedProposal) {
         		this.selectedProposal.calendarId = calendar
