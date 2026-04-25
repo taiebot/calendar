@@ -74,6 +74,7 @@
 						:calendars="userCalendars"
 						:isReadOnly="false"
 						:isViewedByAttendee="false"
+						@click="onClick(calendar)"
 						@update:value="onCalendarSelect" />
 
                     <!-- Title -->
@@ -639,6 +640,11 @@ export default {
     		}
     	},
 
+		onClick(calendar) {
+    		console.log('CHILD CLICK', calendar)
+    		this.$emit('update:value', calendar)
+  		},
+		
 		onWindowResize(): void {
 			this.screenWidth = window.innerWidth
 		},
