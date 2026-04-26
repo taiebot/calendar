@@ -73,7 +73,6 @@
 						:calendars="userCalendars"
 						:isReadOnly="false"
 						:isViewedByAttendee="false"
-						console.log('[CalendarPickerHeader] mounted')
 						@update:value="onCalendarSelect" />
 
                     <!-- Title -->
