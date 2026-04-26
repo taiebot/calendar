@@ -73,7 +73,11 @@
 						:calendars="userCalendars"
 						:isReadOnly="false"
 						:isViewedByAttendee="false"
-						@update:value="onCalendarSelect" />
+						console.log('[CalendarPickerHeader] mounted')
+						@update:value="onCalendarSelect" 
+						emit('update:value', newValue)
+						console.log('[CalendarPickerHeader] emitted update:value', newValue)
+						/>
 
                     <!-- Title -->
                     <div class="proposal-editor__row-title">
