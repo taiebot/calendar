@@ -69,12 +69,10 @@
 					<!-- CalendarPicker -->
 					<CalendarPickerHeader
 						v-if="selectedProposal && userCalendars.length > 0"
-						:key="selectedCalendarId"
 						:value="selectedCalendar"
 						:calendars="userCalendars"
 						:isReadOnly="false"
 						:isViewedByAttendee="false"
-						@click="onClick(calendar)"
 						@update:value="onCalendarSelect" />
 
                     <!-- Title -->
@@ -636,14 +634,9 @@ export default {
 			console.log('SELECTED:', calendar)
 
 			if (this.selectedProposal) {
-        		this.selectedProposal.calendarId = calendar
+        		this.selectedProposal.calendarId = calendar.id
     		}
     	},
-
-		onClick(calendar) {
-    		console.log('CHILD CLICK', calendar)
-    		this.$emit('update:value', calendar)
-  		},
 		
 		onWindowResize(): void {
 			this.screenWidth = window.innerWidth
@@ -654,7 +647,10 @@ export default {
 			this.modalMode = this.proposalStore.modalMode
 
 			if (this.selectedProposal?.calendarId) {
-        		this.selectedCalendarId = this.selectedProposal.calendarId
+        		this.selectedCalendarId =
+					typeof this.selectedProposal.calendarId === 'object'
+						? this.selectedProposal.calendarId.id
+						: this.selectedProposal.calendarId
     		}
 
 			if (this.calendarsStore.initialCalendarsLoaded) {
