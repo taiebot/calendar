@@ -31,7 +31,10 @@
 					:key="calendar.id"
 					class="calendar-picker-header__picker__option"
 					:closeAfterClick="true"
-					@click="$emit('update:value', calendar)">
+					@click="() => { 
+    					console.log('[CalendarPickerHeader] emitting update:value', calendar)
+    				$emit('update:value', calendar)
+					}">
 					<template #icon>
 						<div class="calendar-picker-header__icon">
 							<div
@@ -88,6 +91,9 @@ export default {
 	},
 
 	mounted() {
+		console.log('[CalendarPickerHeader] mounted with value:', this.value)
+    	console.log('[CalendarPickerHeader] calendars:', this.calendars)
+
 		// Taken from https://pictogrammers.com/library/mdi/icon/menu-down/
 		// Material Design icons by Google are available under the Apache 2.0 license
 		const menuDownIconUrl = 'url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTcsMTBMMTIsMTVMMTcsMTBIN1oiIC8+PC9zdmc+)'
