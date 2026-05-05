@@ -629,7 +629,7 @@ export default {
 	methods: {
 		t,
 
-		onCalendarSelect(calendar) {
+		onCalendarSelect() {
 			this.selectedCalendarId = calendar.id
 			console.log('SELECTED:', calendar)
 
