@@ -201,7 +201,7 @@ export default {
 			const groups = {}
 			dates.forEach((d) => {
 				// Apply timezone offset for grouping by day
-				const offset = getTimezoneOffset(d.date.toISOString(), this.timezoneId)
+				const offset = getTimezoneOffset(d.date, this.timezoneId)
 				const key = moment(d.date).utcOffset(offset).format('YYYY-MM-DD')
 				if (!groups[key]) {
 					groups[key] = []
@@ -209,7 +209,7 @@ export default {
 				groups[key].push(d)
 			})
 			return Object.entries(groups).map(([key, grp]: [string, ProposalDate[]]) => {
-				const offset = getTimezoneOffset(grp[0].date.toISOString(), this.timezoneId)
+				const offset = getTimezoneOffset(grp[0].date, this.timezoneId)
 				return {
 					key,
 					label: moment(grp[0].date).utcOffset(offset).format('dddd, MMMM Do'),
@@ -230,7 +230,7 @@ export default {
 		t,
 
 		dateTimeSpan(date) {
-			const offset = getTimezoneOffset(date.toISOString(), this.timezoneId)
+			const offset = getTimezoneOffset(date, this.timezoneId)
 			const startDate = moment(date).utcOffset(offset)
 			const endDate = moment(date).utcOffset(offset).add(this.proposal.duration, 'minutes')
 
@@ -255,7 +255,7 @@ export default {
 				return ''
 			}
 			// Apply timezone offset and format very compact: "7/8 2PM"
-			const offset = getTimezoneOffset(date.toISOString(), this.timezoneId)
+			const offset = getTimezoneOffset(date, this.timezoneId)
 			const adjustedDate = moment(date).utcOffset(offset)
 			return adjustedDate.format('M/D LT').replace(':00', '').replace(' ', ' ')
 		},
