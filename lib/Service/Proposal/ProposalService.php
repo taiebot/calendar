@@ -381,10 +381,8 @@ class ProposalService {
 		$confirmedDate = new ProposalDateCollection();
 		$confirmedDate[] = $selectedDate;
 		$proposal->setDates($confirmedDate);
-
 		// generate notifications for internal and external participants that the meeting is confirmed
 		$this->generateNotifications($user, $proposal, 'F');
-		
 		// destroy the proposal entry
 		$this->proposalVoteMapper->deleteByProposalId($user->getUID(), $proposal->getId());
 		$this->proposalParticipantMapper->deleteByProposalId($user->getUID(), $proposal->getId());
