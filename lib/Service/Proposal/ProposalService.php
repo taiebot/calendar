@@ -377,6 +377,9 @@ class ProposalService {
 		}
 		$this->applyCalendarBlockersParticipant($user, $proposal, 'M', $vObject);
 
+		// generate notifications for internal and external participants that the meeting is confirmed
+		$this->generateNotifications($user, $proposal, 'F');
+		
 		// destroy the proposal entry
 		$this->proposalVoteMapper->deleteByProposalId($user->getUID(), $proposal->getId());
 		$this->proposalParticipantMapper->deleteByProposalId($user->getUID(), $proposal->getId());
@@ -496,6 +499,9 @@ class ProposalService {
 			),
 			'D' => $template->setSubject(
 				$this->l10n->t('%s has canceled a proposed meeting', [$senderName])
+			),
+			'F' => $template->setSubject(
+				$this->l10n->t('%s has confirmed a meeting date', [$senderName])
 			)
 		};
 		// heading
@@ -508,6 +514,9 @@ class ProposalService {
 			),
 			'D' => $template->addHeading(
 				$this->l10n->t('Dear %s, a proposed meeting has been cancelled', [$recipientName])
+			),
+			'F' => $template->addHeading(
+				$this->l10n->t('Dear %s, a meeting date has been confirmed', [$recipientName])
 			)
 		};
 		// buttons
