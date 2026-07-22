@@ -377,6 +377,11 @@ class ProposalService {
 		}
 		$this->applyCalendarBlockersParticipant($user, $proposal, 'M', $vObject);
 
+		// keep only the confirmed date so the notification email shows just that one
+		$confirmedDate = new ProposalDateCollection();
+		$confirmedDate[] = $selectedDate;
+		$proposal->setDates($confirmedDate);
+
 		// generate notifications for internal and external participants that the meeting is confirmed
 		$this->generateNotifications($user, $proposal, 'F');
 		
@@ -520,10 +525,12 @@ class ProposalService {
 			)
 		};
 		// buttons
-		$template->addBodyButton(
-			$this->l10n->t('Respond'),
-			$this->urlGenerator->linkToRouteAbsolute('Calendar.ProposalPublic.index', ['token' => $recipientToken])
-		);
+		if ($reason !== 'F') {
+			$template->addBodyButton(
+				$this->l10n->t('Respond'),
+				$this->urlGenerator->linkToRouteAbsolute('Calendar.ProposalPublic.index', ['token' => $recipientToken])
+			);
+		}
 		// description
 		if (!empty($proposal->getDescription())) {
 			$template->addBodyListItem($proposal->getDescription(), $this->l10n->t('Description:'));
