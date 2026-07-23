@@ -77,6 +77,9 @@ class Notifier implements INotifier {
 				break;
 			case 'proposal_response':
 				$parameters = $notification->getSubjectParameters();
+				$notification->setParsedSubject(
+					$l->t('New response to %1$s', [$parameters['name']])
+				);
 				$notification->setRichSubject($l->t('New response to {proposal}'), [
 					'proposal' => [
 						'id' => $parameters['id'],
@@ -86,6 +89,9 @@ class Notifier implements INotifier {
 					]
 				]);
 				$messageParameters = $notification->getMessageParameters();
+				$notification->setParsedMessage(
+					$l->t('%1$s responded to your meeting proposal.', [$messageParameters['participant']])
+				);
 				$notification->setRichMessage($l->t('{participant} responded to your meeting proposal.'), [
 					'participant' => [
 						'type' => 'highlight',
