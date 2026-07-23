@@ -11,6 +11,7 @@ namespace OCA\Calendar\Service\Proposal;
 
 use DateTimeZone;
 use Exception;
+use OCA\Calendar\AppInfo\Application;
 use OCA\Calendar\Db\ProposalDateMapper;
 use OCA\Calendar\Db\ProposalMapper;
 use OCA\Calendar\Db\ProposalParticipantMapper;
@@ -41,6 +42,7 @@ use OCP\Mail\IMailer;
 use OCP\Mail\Provider\Address;
 use OCP\Mail\Provider\IManager as IMailManager;
 use OCP\Mail\Provider\IMessageSend;
+use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Component\VEvent;
@@ -62,6 +64,7 @@ class ProposalService {
 		private IMailer $systemMailManager,
 		private IMailManager $userMailManager,
 		private IManager $calendarManager,
+		private INotificationManager $notificationManager,
 	) {
 	}
 
@@ -377,6 +380,14 @@ class ProposalService {
 		}
 		$this->applyCalendarBlockersParticipant($user, $proposal, 'M', $vObject);
 
+		// keep only the confirmed date so the notification email shows just that one
+		$confirmedDate = new ProposalDateCollection();
+		$confirmedDate[] = $selectedDate;
+		$proposal->setDates($confirmedDate);
+
+		// generate notifications for internal and external participants that the meeting is confirmed
+		$this->generateNotifications($user, $proposal, 'F');
+
 		// destroy the proposal entry
 		$this->proposalVoteMapper->deleteByProposalId($user->getUID(), $proposal->getId());
 		$this->proposalParticipantMapper->deleteByProposalId($user->getUID(), $proposal->getId());
@@ -449,6 +460,23 @@ class ProposalService {
 		// update participant status to responded
 		$participantEntry->setStatus(ProposalParticipantStatus::Responded->value);
 		$this->proposalParticipantMapper->update($participantEntry);
+
+		// notify the organiser with a bell notification
+		$notification = $this->notificationManager->createNotification();
+		$notification->setApp(Application::APP_ID)
+			->setUser($participantEntry->getUid())
+			->setDateTime(new \DateTime())
+			->setObject('proposal', (string)$proposalEntry->getId())
+			->setSubject('proposal_response', [
+				'id' => $proposalEntry->getId(),
+				'type' => 'calendar-proposal',
+				'name' => $proposalEntry->getTitle(),
+			])
+			->setMessage('proposal_response', [
+				'id' => $participantEntry->getId(),
+				'participant' => $participantEntry->getName() ?? $participantEntry->getAddress(),
+			]);
+		$this->notificationManager->notify($notification);
 	}
 
 	private function generateNotifications(IUser $user, ProposalObject $proposal, string $reason): void {
@@ -496,6 +524,9 @@ class ProposalService {
 			),
 			'D' => $template->setSubject(
 				$this->l10n->t('%s has canceled a proposed meeting', [$senderName])
+			),
+			'F' => $template->setSubject(
+				$this->l10n->t('%s has confirmed a meeting date', [$senderName])
 			)
 		};
 		// heading
@@ -508,13 +539,18 @@ class ProposalService {
 			),
 			'D' => $template->addHeading(
 				$this->l10n->t('Dear %s, a proposed meeting has been cancelled', [$recipientName])
+			),
+			'F' => $template->addHeading(
+				$this->l10n->t('Dear %s, a meeting date has been confirmed', [$recipientName])
 			)
 		};
-		// buttons
-		$template->addBodyButton(
-			$this->l10n->t('Respond'),
-			$this->urlGenerator->linkToRouteAbsolute('Calendar.ProposalPublic.index', ['token' => $recipientToken])
-		);
+		// buttons — no "Respond" action once the meeting is finalized
+		if ($reason !== 'F') {
+			$template->addBodyButton(
+				$this->l10n->t('Respond'),
+				$this->urlGenerator->linkToRouteAbsolute('Calendar.ProposalPublic.index', ['token' => $recipientToken])
+			);
+		}
 		// description
 		if (!empty($proposal->getDescription())) {
 			$template->addBodyListItem($proposal->getDescription(), $this->l10n->t('Description:'));
