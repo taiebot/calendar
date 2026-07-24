@@ -461,7 +461,7 @@ class ProposalService {
 			->setObject('proposal', (string)$proposalEntry->getId())
 			->setSubject('proposal_response', [
 				'id' => $proposalEntry->getId(),
-				'type' => 'calendar-proposal',
+				'type' => 'higlight',
 				'name' => $proposalEntry->getTitle(),
 			])
 			->setMessage('proposal_response', [
