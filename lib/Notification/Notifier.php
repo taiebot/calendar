@@ -91,7 +91,6 @@ class Notifier implements INotifier {
 						'name' => (string)$parameters['participantName'],
 					],
 				];
-				$notification->setIcon($this->url->getAbsoluteURL($this->url->imagePath('calendar', 'app-dark.svg')));
 				$notification->setParsedSubject(
 					$l->t('%1$s responded to %2$s', [(string)$parameters['participantName'], (string)$parameters['name']])
 				);
