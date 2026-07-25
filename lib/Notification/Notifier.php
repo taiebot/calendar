@@ -77,28 +77,26 @@ class Notifier implements INotifier {
 				break;
 			case 'proposal_response':
 				$parameters = $notification->getSubjectParameters();
-				$notification->setParsedSubject(
-					$l->t('New response to %1$s', [$parameters['name']])
-				);
-				$notification->setRichSubject($l->t('New response to {proposal}'), [
+				$link = $this->url->linkToRouteAbsolute('calendar.view.index');
+				$richParams = [
 					'proposal' => [
-						'id' => $parameters['id'],
-						'type' => $parameters['type'],
-						'name' => $parameters['name'],
-						'link' => $this->url->linkToRouteAbsolute('calendar.view.index')
-					]
-				]);
-				$messageParameters = $notification->getMessageParameters();
-				$notification->setParsedMessage(
-					$l->t('%1$s responded to your meeting proposal.', [$messageParameters['participant']])
-				);
-				$notification->setRichMessage($l->t('{participant} responded to your meeting proposal.'), [
+						'type' => 'highlight',
+						'id' => (string)$parameters['id'],
+						'name' => (string)$parameters['name'],
+						'link' => $link,
+					],
 					'participant' => [
 						'type' => 'highlight',
-						'id' => $messageParameters['id'],
-						'name' => $messageParameters['participant'],
+						'id' => (string)$parameters['participantId'],
+						'name' => (string)$parameters['participantName'],
 					],
-				]);
+				];
+				$notification->setIcon($this->url->getAbsoluteURL($this->url->imagePath('calendar', 'app-dark.svg')));
+				$notification->setParsedSubject(
+					$l->t('%1$s responded to %2$s', [(string)$parameters['participantName'], (string)$parameters['name']])
+				);
+				$notification->setRichSubject($l->t('{participant} responded to {proposal}'), $richParams);
+				$notification->setLink($link);
 				break;
 			default:
 				throw  new UnknownNotificationException();
