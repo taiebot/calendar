@@ -1,16 +1,20 @@
 <?php
+
 declare(strict_types=1);
 /**
  * SPDX-FileCopyrightText: 2023 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+
 namespace OCA\Calendar\Notification;
+
 use OCA\Calendar\AppInfo\Application;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 use OCP\Notification\UnknownNotificationException;
+
 class Notifier implements INotifier {
 	private IFactory $factory;
 	private IURLGenerator $url;
